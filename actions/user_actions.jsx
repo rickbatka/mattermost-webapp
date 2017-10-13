@@ -595,6 +595,19 @@ export function updateActive(userId, active, success, error) {
     );
 }
 
+export function revokeAllSessions(userId, success, error) {
+    UserActions.revokeAllSessionsForUser(userId)(dispatch, getState).then(
+        (data) => {
+            if (data && success) {
+                success(data);
+            } else if (data == null && error) {
+                const serverError = getState().requests.users.updateUser.error;
+                error({id: serverError.server_error_id, ...serverError});
+            }
+        }
+    );
+}
+
 export function updatePassword(userId, currentPassword, newPassword, success, error) {
     UserActions.updateUserPassword(userId, currentPassword, newPassword)(dispatch, getState).then(
         (data) => {
