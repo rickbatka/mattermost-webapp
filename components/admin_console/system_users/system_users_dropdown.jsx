@@ -56,7 +56,7 @@ export default class SystemUsersDropdown extends React.Component {
             showDeactivateMemberModal: false,
             showRevokeSessionsModal: false,
             user: null,
-            role: null,
+            role: null
         };
     }
 
