@@ -3,8 +3,11 @@
 
 import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
-import {getPost, makeGetPostsForThread} from 'mattermost-redux/selectors/entities/posts';
+
 import {removePost} from 'mattermost-redux/actions/posts';
+import {makeGetPostsForThread} from 'mattermost-redux/selectors/entities/posts';
+
+import {getSelectedPost} from 'selectors/rhs.jsx';
 
 import RhsThread from './rhs_thread.jsx';
 
@@ -12,7 +15,8 @@ function makeMapStateToProps() {
     const getPostsForThread = makeGetPostsForThread();
 
     return function mapStateToProps(state, ownProps) {
-        const selected = getPost(state, state.views.rhs.selectedPostId);
+        const selected = getSelectedPost(state);
+
         let posts = [];
         if (selected) {
             posts = getPostsForThread(state, {rootId: selected.id, channelId: selected.channel_id});

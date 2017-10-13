@@ -1,27 +1,28 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
-import CreateComment from 'components/create_comment';
-import RhsHeaderPost from 'components/rhs_header_post.jsx';
-import RootPost from 'components/rhs_root_post.jsx';
-import Comment from 'components/rhs_comment.jsx';
-import FloatingTimestamp from 'components/post_view/floating_timestamp.jsx';
-import DateSeparator from 'components/post_view/date_separator.jsx';
-
-import UserStore from 'stores/user_store.jsx';
-import PreferenceStore from 'stores/preference_store.jsx';
-import WebrtcStore from 'stores/webrtc_store.jsx';
-
-import * as Utils from 'utils/utils.jsx';
-import DelayedAction from 'utils/delayed_action.jsx';
-
-import Constants from 'utils/constants.jsx';
-const Preferences = Constants.Preferences;
-
 import $ from 'jquery';
+
 import PropTypes from 'prop-types';
 import React from 'react';
 import Scrollbars from 'react-custom-scrollbars';
+
+import PreferenceStore from 'stores/preference_store.jsx';
+import UserStore from 'stores/user_store.jsx';
+import WebrtcStore from 'stores/webrtc_store.jsx';
+
+import Constants from 'utils/constants.jsx';
+import DelayedAction from 'utils/delayed_action.jsx';
+import * as Utils from 'utils/utils.jsx';
+
+import CreateComment from 'components/create_comment';
+import DateSeparator from 'components/post_view/date_separator.jsx';
+import FloatingTimestamp from 'components/post_view/floating_timestamp.jsx';
+import Comment from 'components/rhs_comment.jsx';
+import RhsHeaderPost from 'components/rhs_header_post.jsx';
+import RootPost from 'components/rhs_root_post.jsx';
+
+const Preferences = Constants.Preferences;
 
 export function renderView(props) {
     return (
@@ -351,7 +352,11 @@ export default class RhsThread extends React.Component {
             rootStatus = this.state.statuses[selected.user_id] || 'offline';
         }
 
-        const rootPostDay = Utils.getDateForUnixTicks(selected.create_at);
+        let createAt = selected.create_at;
+        if (!createAt) {
+            createAt = this.props.posts[0].create_at;
+        }
+        const rootPostDay = Utils.getDateForUnixTicks(createAt);
         let previousPostDay = rootPostDay;
 
         const commentsLists = [];
@@ -400,6 +405,20 @@ export default class RhsThread extends React.Component {
                         status={status}
                         isBusy={this.state.isBusy}
                         removePost={this.props.actions.removePost}
+                    />
+                </div>
+            );
+        }
+
+        let createComment;
+        if (selected.type !== Constants.PostTypes.FAKE_PARENT_DELETED) {
+            createComment = (
+                <div className='post-create__container'>
+                    <CreateComment
+                        channelId={selected.channel_id}
+                        rootId={selected.id}
+                        latestPostId={postsLength > 0 ? postsArray[postsLength - 1].id : selected.id}
+                        getSidebarBody={this.getSidebarBody}
                     />
                 </div>
             );
@@ -457,14 +476,7 @@ export default class RhsThread extends React.Component {
                         >
                             {commentsLists}
                         </div>
-                        <div className='post-create__container'>
-                            <CreateComment
-                                channelId={selected.channel_id}
-                                rootId={selected.id}
-                                latestPostId={postsLength > 0 ? postsArray[postsLength - 1].id : selected.id}
-                                getSidebarBody={this.getSidebarBody}
-                            />
-                        </div>
+                        {createComment}
                     </div>
                 </Scrollbars>
             </div>

@@ -1,43 +1,40 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
-import AppDispatcher from 'dispatcher/app_dispatcher.jsx';
+import {browserHistory} from 'react-router/es6';
 
-import ChannelStore from 'stores/channel_store.jsx';
-import UserStore from 'stores/user_store.jsx';
-import BrowserStore from 'stores/browser_store.jsx';
-import ErrorStore from 'stores/error_store.jsx';
-import TeamStore from 'stores/team_store.jsx';
-import SearchStore from 'stores/search_store.jsx';
+import {createDirectChannel, getChannelAndMyMember, getChannelStats, getMyChannelMember, joinChannel, viewChannel} from 'mattermost-redux/actions/channels';
+import {getPostThread} from 'mattermost-redux/actions/posts';
+import {removeUserFromTeam} from 'mattermost-redux/actions/teams';
+import {Client4} from 'mattermost-redux/client';
 
-import {handleNewPost} from 'actions/post_actions.jsx';
-import {loadProfilesForSidebar, loadNewDMIfNeeded, loadNewGMIfNeeded} from 'actions/user_actions.jsx';
 import {loadChannelsForCurrentUser} from 'actions/channel_actions.jsx';
-import {stopPeriodicStatusUpdates} from 'actions/status_actions.jsx';
-import * as WebsocketActions from 'actions/websocket_actions.jsx';
 import {trackEvent} from 'actions/diagnostics_actions.jsx';
+import {handleNewPost} from 'actions/post_actions.jsx';
+import {stopPeriodicStatusUpdates} from 'actions/status_actions.jsx';
+import {loadNewDMIfNeeded, loadNewGMIfNeeded, loadProfilesForSidebar} from 'actions/user_actions.jsx';
+import * as WebsocketActions from 'actions/websocket_actions.jsx';
+import AppDispatcher from 'dispatcher/app_dispatcher.jsx';
+import BrowserStore from 'stores/browser_store.jsx';
+import ChannelStore from 'stores/channel_store.jsx';
+import ErrorStore from 'stores/error_store.jsx';
+import store from 'stores/redux_store.jsx';
+import SearchStore from 'stores/search_store.jsx';
+import TeamStore from 'stores/team_store.jsx';
+import UserStore from 'stores/user_store.jsx';
+
+import WebSocketClient from 'client/web_websocket_client.jsx';
 
 import {ActionTypes, Constants, ErrorPageTypes} from 'utils/constants.jsx';
 import EventTypes from 'utils/event_types.jsx';
-
-import WebSocketClient from 'client/web_websocket_client.jsx';
 import {sortTeamsByDisplayName} from 'utils/team_utils.jsx';
 import * as Utils from 'utils/utils.jsx';
 
 import en from 'i18n/en.json';
 import * as I18n from 'i18n/i18n.jsx';
-import {browserHistory} from 'react-router/es6';
 
-// Redux actions
-import store from 'stores/redux_store.jsx';
 const dispatch = store.dispatch;
 const getState = store.getState;
-
-import {Client4} from 'mattermost-redux/client';
-
-import {removeUserFromTeam} from 'mattermost-redux/actions/teams';
-import {viewChannel, getChannelStats, getMyChannelMember, getChannelAndMyMember, createDirectChannel, joinChannel} from 'mattermost-redux/actions/channels';
-import {getPostThread} from 'mattermost-redux/actions/posts';
 
 export function emitChannelClickEvent(channel) {
     function userVisitedFakeChannel(chan, success, fail) {
@@ -157,7 +154,8 @@ export function emitCloseRightHandSide() {
 
     dispatch({
         type: ActionTypes.SELECT_POST,
-        postId: ''
+        postId: '',
+        channelId: ''
     });
 }
 
@@ -167,6 +165,7 @@ export function emitPostFocusRightHandSideFromSearch(post, isMentionSearch) {
             AppDispatcher.handleServerAction({
                 type: ActionTypes.RECEIVED_POST_SELECTED,
                 postId: Utils.getRootId(post),
+                channelId: post.channel_id,
                 from_search: SearchStore.getSearchTerm(),
                 from_flagged_posts: SearchStore.getIsFlaggedPosts(),
                 from_pinned_posts: SearchStore.getIsPinnedPosts()
@@ -522,7 +521,8 @@ export function toggleSideBarAction(visible) {
 
         AppDispatcher.handleServerAction({
             type: ActionTypes.RECEIVED_POST_SELECTED,
-            postId: null
+            postId: null,
+            channelId: null
         });
     }
 }
@@ -535,7 +535,8 @@ export function toggleSideBarRightMenuAction() {
 
     AppDispatcher.handleServerAction({
         type: ActionTypes.RECEIVED_POST_SELECTED,
-        postId: null
+        postId: null,
+        channelId: null
     });
 
     document.querySelector('.app__body .inner-wrap').classList.remove('move--right', 'move--left', 'move--left-small');

@@ -1,15 +1,15 @@
 // Copyright (c) 2017-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
-import {clientLogout} from 'actions/global_actions.jsx';
-
-import store from 'stores/redux_store.jsx';
-const dispatch = store.dispatch;
-const getState = store.getState;
-
 import * as AdminActions from 'mattermost-redux/actions/admin';
 import * as UserActions from 'mattermost-redux/actions/users';
 import {Client4} from 'mattermost-redux/client';
+
+import {clientLogout} from 'actions/global_actions.jsx';
+import store from 'stores/redux_store.jsx';
+
+const dispatch = store.dispatch;
+const getState = store.getState;
 
 export function saveConfig(config, success, error) {
     AdminActions.updateConfig(config)(dispatch, getState).then(
@@ -136,19 +136,6 @@ export function samlCertificateStatus(success, error) {
                 success(data);
             } else if (data == null && error) {
                 const serverError = getState().requests.admin.getSamlCertificateStatus.error;
-                error({id: serverError.server_error_id, ...serverError});
-            }
-        }
-    );
-}
-
-export function ldapSyncNow(success, error) {
-    AdminActions.syncLdap()(dispatch, getState).then(
-        (data) => {
-            if (data && success) {
-                success(data);
-            } else if (data == null && error) {
-                const serverError = getState().requests.admin.syncLdap.error;
                 error({id: serverError.server_error_id, ...serverError});
             }
         }

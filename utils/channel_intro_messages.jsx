@@ -1,22 +1,24 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
-import * as Utils from './utils.jsx';
+import React from 'react';
+import {FormattedDate, FormattedHTMLMessage, FormattedMessage} from 'react-intl';
+
+import * as GlobalActions from 'actions/global_actions.jsx';
+import ChannelStore from 'stores/channel_store.jsx';
+import TeamStore from 'stores/team_store.jsx';
+import UserStore from 'stores/user_store.jsx';
+
+import Constants from 'utils/constants.jsx';
+
 import ChannelInviteModal from 'components/channel_invite_modal';
-import EditChannelHeaderModal from 'components/edit_channel_header_modal.jsx';
+import EditChannelHeaderModal from 'components/edit_channel_header_modal';
+import ProfilePicture from 'components/profile_picture.jsx';
 import ToggleModalButton from 'components/toggle_modal_button.jsx';
 import UserProfile from 'components/user_profile.jsx';
-import ChannelStore from 'stores/channel_store.jsx';
-import UserStore from 'stores/user_store.jsx';
-import TeamStore from 'stores/team_store.jsx';
-import Constants from 'utils/constants.jsx';
-import * as GlobalActions from 'actions/global_actions.jsx';
-import ProfilePicture from 'components/profile_picture.jsx';
 
 import {showManagementOptions} from './channel_utils.jsx';
-
-import React from 'react';
-import {FormattedMessage, FormattedHTMLMessage, FormattedDate} from 'react-intl';
+import * as Utils from './utils.jsx';
 
 export function createChannelIntroMessage(channel, fullWidthIntro) {
     let centeredIntro = '';
@@ -32,7 +34,7 @@ export function createChannelIntroMessage(channel, fullWidthIntro) {
         return createDefaultIntroMessage(channel, centeredIntro);
     } else if (channel.name === Constants.OFFTOPIC_CHANNEL) {
         return createOffTopicIntroMessage(channel, centeredIntro);
-    } else if (channel.type === 'O' || channel.type === 'P') {
+    } else if (channel.type === Constants.OPEN_CHANNEL || channel.type === Constants.PRIVATE_CHANNEL) {
         return createStandardIntroMessage(channel, centeredIntro);
     }
     return null;
@@ -160,13 +162,14 @@ export function createOffTopicIntroMessage(channel, centeredIntro) {
         />
     );
 
-    const isChannelAdmin = ChannelStore.isChannelAdminForCurrentChannel();
-    const isTeamAdmin = TeamStore.isTeamAdminForCurrentTeam();
-    const isSystemAdmin = UserStore.isSystemAdminForCurrentUser();
-
     let setHeaderButton = createSetHeaderButton(channel);
-    if (!showManagementOptions(channel, isChannelAdmin, isTeamAdmin, isSystemAdmin)) {
+    if (!showManagementOption(channel)) {
         setHeaderButton = null;
+    }
+
+    let channelInviteButton = createInviteChannelMemberButton(channel, uiType);
+    if (channel.type === Constants.PRIVATE_CHANNEL && !isCurrentUserPermitted(global.window.mm_config.RestrictPrivateChannelManageMembers)) {
+        channelInviteButton = null;
     }
 
     return (
@@ -178,41 +181,32 @@ export function createOffTopicIntroMessage(channel, centeredIntro) {
                     display_name: channel.display_name
                 }}
             />
-            {createInviteChannelMemberButton(channel, uiType)}
+            {channelInviteButton}
             {setHeaderButton}
         </div>
     );
 }
 
 export function createDefaultIntroMessage(channel, centeredIntro) {
-    let inviteModalLink = (
-        <a
-            className='intro-links'
-            href='#'
-            onClick={GlobalActions.showGetTeamInviteLinkModal}
-        >
-            <i className='fa fa-user-plus'/>
-            <FormattedMessage
-                id='intro_messages.inviteOthers'
-                defaultMessage='Invite others to this team'
-            />
-        </a>
-    );
-
-    const isChannelAdmin = ChannelStore.isChannelAdminForCurrentChannel();
-    const isTeamAdmin = TeamStore.isTeamAdminForCurrentTeam();
-    const isSystemAdmin = UserStore.isSystemAdminForCurrentUser();
-
-    if (global.window.mm_license.IsLicensed === 'true') {
-        if (global.window.mm_config.RestrictTeamInvite === Constants.PERMISSIONS_SYSTEM_ADMIN && !isSystemAdmin) {
-            inviteModalLink = null;
-        } else if (global.window.mm_config.RestrictTeamInvite === Constants.PERMISSIONS_TEAM_ADMIN && !(isTeamAdmin || isSystemAdmin)) {
-            inviteModalLink = null;
-        }
+    let teamInviteLink = null;
+    if (isCurrentUserPermitted(global.window.mm_config.RestrictTeamInvite)) {
+        teamInviteLink = (
+            <a
+                className='intro-links'
+                href='#'
+                onClick={GlobalActions.showGetTeamInviteLinkModal}
+            >
+                <i className='fa fa-user-plus'/>
+                <FormattedMessage
+                    id='intro_messages.inviteOthers'
+                    defaultMessage='Invite others to this team'
+                />
+            </a>
+        );
     }
 
     let setHeaderButton = createSetHeaderButton(channel);
-    if (!showManagementOptions(channel, isChannelAdmin, isTeamAdmin, isSystemAdmin)) {
+    if (!showManagementOption(channel)) {
         setHeaderButton = null;
     }
 
@@ -225,7 +219,7 @@ export function createDefaultIntroMessage(channel, centeredIntro) {
                     display_name: channel.display_name
                 }}
             />
-            {inviteModalLink}
+            {teamInviteLink}
             {setHeaderButton}
             <br/>
         </div>
@@ -238,7 +232,7 @@ export function createStandardIntroMessage(channel, centeredIntro) {
     var uiType;
     var memberMessage;
 
-    if (channel.type === 'P') {
+    if (channel.type === Constants.PRIVATE_CHANNEL) {
         uiType = (
             <FormattedMessage
                 id='intro_messages.group'
@@ -321,13 +315,14 @@ export function createStandardIntroMessage(channel, centeredIntro) {
         );
     }
 
-    const isChannelAdmin = ChannelStore.isChannelAdminForCurrentChannel();
-    const isTeamAdmin = TeamStore.isTeamAdminForCurrentTeam();
-    const isSystemAdmin = UserStore.isSystemAdminForCurrentUser();
-
     let setHeaderButton = createSetHeaderButton(channel);
-    if (!showManagementOptions(channel, isChannelAdmin, isTeamAdmin, isSystemAdmin)) {
+    if (!showManagementOption(channel)) {
         setHeaderButton = null;
+    }
+
+    let channelInviteButton = createInviteChannelMemberButton(channel, uiType);
+    if (channel.type === Constants.PRIVATE_CHANNEL && !isCurrentUserPermitted(global.window.mm_config.RestrictPrivateChannelManageMembers)) {
+        channelInviteButton = null;
     }
 
     return (
@@ -347,7 +342,7 @@ export function createStandardIntroMessage(channel, centeredIntro) {
                 {purposeMessage}
                 <br/>
             </p>
-            {createInviteChannelMemberButton(channel, uiType)}
+            {channelInviteButton}
             {setHeaderButton}
         </div>
     );
@@ -386,4 +381,36 @@ function createSetHeaderButton(channel) {
             />
         </ToggleModalButton>
     );
+}
+
+function showManagementOption(channel) {
+    const isChannelAdmin = ChannelStore.isChannelAdminForCurrentChannel();
+    const isTeamAdmin = TeamStore.isTeamAdminForCurrentTeam();
+    const isSystemAdmin = UserStore.isSystemAdminForCurrentUser();
+
+    if (!showManagementOptions(channel, isChannelAdmin, isTeamAdmin, isSystemAdmin)) {
+        return false;
+    }
+
+    return true;
+}
+
+function isCurrentUserPermitted(permission) {
+    if (global.window.mm_license.IsLicensed !== 'true') {
+        return true;
+    }
+
+    const isChannelAdmin = ChannelStore.isChannelAdminForCurrentChannel();
+    const isTeamAdmin = TeamStore.isTeamAdminForCurrentTeam();
+    const isSystemAdmin = UserStore.isSystemAdminForCurrentUser();
+
+    if (
+        (permission === Constants.PERMISSIONS_SYSTEM_ADMIN && !isSystemAdmin) ||
+        (permission === Constants.PERMISSIONS_TEAM_ADMIN && !(isTeamAdmin || isSystemAdmin)) ||
+        (permission === Constants.PERMISSIONS_CHANNEL_ADMIN && !(isChannelAdmin || isTeamAdmin || isSystemAdmin))
+    ) {
+        return false;
+    }
+
+    return true;
 }
