@@ -54,8 +54,9 @@ export default class SystemUsersDropdown extends React.Component {
             serverError: null,
             showDemoteModal: false,
             showDeactivateMemberModal: false,
+            showRevokeSessionsModal: false,
             user: null,
-            role: null
+            role: null,
         };
     }
 
@@ -196,6 +197,73 @@ export default class SystemUsersDropdown extends React.Component {
         );
     }
 
+    handleShowRevokeSessionsModal = (e) => {
+        e.preventDefault();
+
+        this.setState({showRevokeSessionsModal: true});
+    }
+
+    handleRevokeSessions = () => {
+        const me = UserStore.getCurrentUser();
+        revokeAllSessions(this.props.user.id,
+            () => {
+                if (this.props.user.id === me.id) {
+                    clientLogout();
+                }
+            },
+            (err) => {
+                this.setState({serverError: err.message});
+            }
+        );
+
+        this.setState({showRevokeSessionsModal: false});
+    }
+
+    handleRevokeSessionsCancel = () => {
+        this.setState({showRevokeSessionsModal: false});
+    }
+
+    renderRevokeSessionsModal = () => {
+        const title = (
+            <FormattedMessage
+                id='revoke_user_sessions_modal.title'
+                defaultMessage='Revoke Sessions for {username}'
+                values={{
+                    username: this.props.user.username
+                }}
+            />
+        );
+
+        const message = (
+            <FormattedMessage
+                id='revoke_user_sessions_modal.desc'
+                defaultMessage='This action revokes all sessions for {username}. They will be logged out from all devices. Are you sure you want to revoke all sessions for {username}?'
+                values={{
+                    username: this.props.user.username
+                }}
+            />
+        );
+
+        const revokeUserButtonButton = (
+            <FormattedMessage
+                id='revoke_user_sessions_modal.revoke'
+                defaultMessage='Revoke'
+            />
+        );
+
+        return (
+            <ConfirmModal
+                show={this.state.showRevokeSessionsModal}
+                title={title}
+                message={message}
+                confirmButtonClass='btn btn-danger'
+                confirmButtonText={revokeUserButtonButton}
+                onConfirm={this.handleRevokeSessions}
+                onCancel={this.handleRevokeSessionsCancel}
+            />
+        );
+    }
+
     renderAccessToken = () => {
         const userAccessTokensEnabled = global.window.mm_config.EnableUserAccessTokens === 'true';
         if (!userAccessTokensEnabled) {
@@ -269,6 +337,7 @@ export default class SystemUsersDropdown extends React.Component {
         let showManageTeams = true;
         const mfaEnabled = global.window.mm_license.IsLicensed === 'true' && global.window.mm_license.MFA === 'true' && global.window.mm_config.EnableMultifactorAuthentication === 'true';
         const showMfaReset = mfaEnabled && user.mfa_active;
+        let showRevokeSessions = UserStore.isSystemAdminForCurrentUser();
 
         if (user.delete_at > 0) {
             currentRoles = (
@@ -280,6 +349,7 @@ export default class SystemUsersDropdown extends React.Component {
             showMakeActive = true;
             showMakeNotActive = false;
             showManageTeams = false;
+            showRevokeSessions = false;
         }
 
         let disableActivationToggle = false;
@@ -409,6 +479,25 @@ export default class SystemUsersDropdown extends React.Component {
             );
         }
 
+        let revokeSessions;
+        if (showRevokeSessions) {
+            revokeSessions = (
+                <li role='presentation'>
+                    <a
+                        id='revokeSessions'
+                        role='menuItem'
+                        href='#'
+                        onClick={this.handleShowRevokeSessionsModal}
+                    >
+                        <FormattedMessage
+                            id='admin.user_item.revokeSessions'
+                            defaultMessage='Revoke Sessions'
+                        />
+                    </a>
+                </li>
+            );
+        }
+
         let manageTokens;
         if (global.window.mm_config.EnableUserAccessTokens === 'true') {
             manageTokens = (
@@ -476,6 +565,7 @@ export default class SystemUsersDropdown extends React.Component {
         }
 
         const deactivateMemberModal = this.renderDeactivateMemberModal();
+        const revokeSessionsModal = this.renderRevokeSessionsModal();
 
         let displayedName = Utils.getDisplayName(user);
         if (displayedName !== user.username) {
@@ -519,9 +609,11 @@ export default class SystemUsersDropdown extends React.Component {
                     {manageTokens}
                     {mfaReset}
                     {passwordReset}
+                    {revokeSessions}
                 </ul>
                 {makeDemoteModal}
                 {deactivateMemberModal}
+                {revokeSessionsModal}
                 {serverError}
             </div>
         );
