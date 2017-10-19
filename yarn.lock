@@ -5411,7 +5411,7 @@ math-expression-evaluator@^1.2.14:
 
 mattermost-redux@mattermost/mattermost-redux#master:
   version "0.0.1"
-  resolved "https://codeload.github.com/mattermost/mattermost-redux/tar.gz/9c9600a4be140fe975be9acdc3f78614f6bdda8b"
+  resolved "https://codeload.github.com/mattermost/mattermost-redux/tar.gz/998f6137a078d916a2baf473a4dd2f0f29208fd3"
   dependencies:
     deep-equal "1.0.1"
     harmony-reflect "1.5.1"
@@ -5425,6 +5425,7 @@ mattermost-redux@mattermost/mattermost-redux#master:
     redux-thunk "2.2.0"
     reselect "3.0.1"
     serialize-error "2.1.0"
+    shallow-equals "1.0.0"
 
 media-typer@0.3.0:
   version "0.3.0"
@@ -7629,6 +7630,10 @@ shallow-clone@^0.1.2:
     kind-of "^2.0.1"
     lazy-cache "^0.2.3"
     mixin-object "^2.0.1"
+
+shallow-equals@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/shallow-equals/-/shallow-equals-1.0.0.tgz#24b74bf1c634c11ed4c7182a6df6fb300dce4390"
 
 shebang-command@^1.2.0:
   version "1.2.0"
